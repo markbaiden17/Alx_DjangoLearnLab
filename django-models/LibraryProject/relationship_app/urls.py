@@ -16,8 +16,15 @@ Including another URLconf
 """
 from django.urls import path
 from .views import list_books, LibraryDetailView
+from . import views
+from django.contrib.auth.views import LoginView, LogoutView
 
 urlpatterns = [
     path('books/', list_books, name='list_books'),
     path('library/<int:pk>/', LibraryDetailView.as_view(), name='library_detail'),
+    # Login and Logout using built-in views
+    path('login/', LoginView.as_view(template_name='relationship_app/login.html'), name='login'),
+    path('logout/', views.logout_user, name='logout'),
+    # Registration using your custom view
+    path('register/', views.register, name='register'),
 ]
