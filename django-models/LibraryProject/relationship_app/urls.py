@@ -24,7 +24,7 @@ urlpatterns = [
     path('library/<int:pk>/', LibraryDetailView.as_view(), name='library_detail'),
     # Login and Logout using built-in views
     path('login/', LoginView.as_view(template_name='relationship_app/login.html'), name='login'),
-    path('logout/', views.logout_user, name='logout'),
+    path('logout/', LogoutView.as_view(template_name='relationship_app/logout.html'), name='logout'),
     # Registration using your custom view
     path('register/', views.register, name='register'),
 ]
