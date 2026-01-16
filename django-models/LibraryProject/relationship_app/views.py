@@ -12,5 +12,5 @@ def all_books_view(request):
 #View to display all books available in a library
 class LibraryBooksView(DetailView):
     model = Library
-    template_name = 'relationship_app/library_books.html'
+    template_name = 'relationship_app/library_detail.html'
     context_object_name = 'library'
