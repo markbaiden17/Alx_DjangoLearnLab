@@ -19,7 +19,7 @@ from . import views
 
 urlpatterns = [
     # Book and Library Views
-    path('books/', views.list_books, name='list_books'),
+    path('books/', views.book_list, name='book_list'),
     path('library/<int:pk>/', views.LibraryDetailView.as_view(), name='library_detail'),
     
     # Auth paths
