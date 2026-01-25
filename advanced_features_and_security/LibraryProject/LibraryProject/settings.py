@@ -25,6 +25,18 @@ SECRET_KEY = 'django-insecure-3c5s_c!mkydgv-vk5-kou)v$ai0(0sxvmzhb&c5!p(e_w(oseq
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Browser-side protections
+SECURE_BROWSER_XSS_FILTER = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Cookie Security (Enforces HTTPS)
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+#Allowed Hosts - Required when DEBUG is False
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
 ALLOWED_HOSTS = []
 
 
@@ -49,6 +61,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'csp.middleware.CSPMiddleware',
 ]
 
 ROOT_URLCONF = 'LibraryProject.LibraryProject.urls'
@@ -121,5 +134,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-LOGIN_REDIRECT_URL = 'list_books'
+LOGIN_REDIRECT_URL = 'book_list'
 LOGOUT_REDIRECT_URL = 'login'
+
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_STYLE_SRC = ("'self'", "https://fonts.googleapis.com")

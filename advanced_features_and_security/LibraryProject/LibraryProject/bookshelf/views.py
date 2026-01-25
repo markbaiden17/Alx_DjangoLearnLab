@@ -40,7 +40,7 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('list_books')
+            return redirect('book_list')
     else:
         form = UserCreationForm()
     return render(request, 'bookshelf/register.html', {'form': form})
@@ -57,3 +57,15 @@ def is_admin(user):
 @user_passes_test(is_admin)
 def admin_view(request):
     return render(request, 'bookshelf/admin_view.html')
+
+# --- Secure Search View (Step 3: Prevent SQL Injection) ---
+
+def search_books(request):
+    query = request.GET.get('q', '') 
+    
+    if query:
+        books = Book.objects.filter(title__icontains=query)
+    else:
+        books = Book.objects.all()
+        
+    return render(request, 'bookshelf/book_list.html', {'books': books})
