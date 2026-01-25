@@ -4,6 +4,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.views.generic.detail import DetailView
 from .models import Book, Library
+from .forms import ExampleForm
 
 # --- Book Views with Required Permissions ---
 
@@ -69,3 +70,13 @@ def search_books(request):
         books = Book.objects.all()
         
     return render(request, 'bookshelf/book_list.html', {'books': books})
+
+def example_form_view(request):
+    if request.method == 'POST':
+        form = ExampleForm(request.POST)
+        if form.is_valid():
+            # Process the data securely
+            pass
+    else:
+        form = ExampleForm()
+    return render(request, 'bookshelf/form_example.html', {'form': form})
