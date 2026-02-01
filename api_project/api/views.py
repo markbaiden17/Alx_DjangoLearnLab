@@ -5,6 +5,6 @@ from .serializers import BookSerializer
 
 # Create your views here.
 # View that uses the serializer to retrieve and return book data
-class BookList(generics.ListCreateAPIView):
+class BookList(generics.ListAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
