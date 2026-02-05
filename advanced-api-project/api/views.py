@@ -3,6 +3,7 @@ from django_filters import rest_framework
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
+from django.shortcuts import get_object_or_404
 from .models import Book
 from .serializers import BookSerializer
 
@@ -18,16 +19,20 @@ class ListView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
 
     # Define filterable fields
-    filterset_fields = ['author', 'title', 'publication_year']
+    filterset_fields = {
+        'title': ['exact', 'icontains'],
+        'author': ['exact'],
+        'publication_year': ['exact', 'gte', 'lte'],
+    }
 
     # Define searchable fields
-    search_fields = ['author', 'title']
+    search_fields = ['title', 'author__name']
 
     # Define ordering fields
     ordering_fields = ['publication_year', 'title']
 
     # Default ordering
-    ordering = ['title']
+    ordering = ['-publication_year']
 
 # View for retrieving a single book by ID
 class DetailView(generics.RetrieveAPIView):
@@ -56,6 +61,14 @@ class UpdateView(generics.UpdateAPIView):
     # Only authenticated users can update books
     permission_classes = [IsAuthenticated]
 
+    def get_object(self):
+        # Look for the identifier in request data or query parameters
+        obj_id = (self.request.data.get("id") or 
+                  self.request.query_params.get("id") or 
+                  self.request.data.get("pk") or
+                  self.request.query_params.get("pk"))
+        return get_object_or_404(Book, id=obj_id)
+
     def perform_update(self, serializer):
         serializer.save()
 
@@ -66,6 +79,14 @@ class DeleteView(generics.DestroyAPIView):
 
     # Only authenticated users can delete books
     permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        # Look for the identifier in request data or query parameters
+        obj_id = (self.request.data.get("id") or 
+                  self.request.query_params.get("id") or 
+                  self.request.data.get("pk") or
+                  self.request.query_params.get("pk"))
+        return get_object_or_404(Book, id=obj_id)
 
     def perform_destroy(self, instance):
         instance.delete()
