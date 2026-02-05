@@ -13,8 +13,8 @@ urlpatterns = [
     path('books/create/', CreateView.as_view(), name='book-create'),
 
     # Endpoint for updating an existing book by ID
-    path('books/<int:pk>/update/', UpdateView.as_view(), name='book-update'),
+    path('books/update/', UpdateView.as_view(), name='book-update'),
 
     # Endpoint for deleting a book by ID
-    path('books/<int:pk>/delete/', DeleteView.as_view(), name='book-delete'),
+    path('books/delete/', DeleteView.as_view(), name='book-delete'),
 ]
