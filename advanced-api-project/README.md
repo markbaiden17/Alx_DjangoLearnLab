@@ -56,11 +56,47 @@ advanced-api-project/
 
 | Method | Endpoint | Description | Authentication Required |
 |--------|----------|-------------|------------------------|
-| GET | `/api/books/` | List all books | No (read-only) |
+| GET | `/api/books/` | List all books (with filtering, search, ordering) | No (read-only) |
 | GET | `/api/books/<int:pk>/` | Retrieve a single book | No (read-only) |
 | POST | `/api/books/create/` | Create a new book | Yes |
 | PUT/PATCH | `/api/books/<int:pk>/update/` | Update a book | Yes |
 | DELETE | `/api/books/<int:pk>/delete/` | Delete a book | Yes |
+
+### Advanced Query Parameters
+
+The Book List endpoint (`/api/books/`) supports advanced querying:
+
+**Filtering:**
+- `?publication_year=<year>` - Filter by exact year
+- `?publication_year__gte=<year>` - Year >= value
+- `?publication_year__lte=<year>` - Year <= value
+- `?author=<id>` - Filter by author ID
+- `?title=<exact_title>` - Filter by exact title
+
+**Searching:**
+- `?search=<term>` - Search in title and author name
+
+**Ordering:**
+- `?ordering=<field>` - Sort by field (ascending)
+- `?ordering=-<field>` - Sort by field (descending)
+- Available fields: `title`, `publication_year`, `author`
+
+**Examples:**
+```bash
+# Books published after 2000
+GET /api/books/?publication_year__gte=2000
+
+# Search for "tolkien"
+GET /api/books/?search=tolkien
+
+# Order by title A-Z
+GET /api/books/?ordering=title
+
+# Combined: Search for "magic" in books after 2000, newest first
+GET /api/books/?search=magic&publication_year__gte=2000&ordering=-publication_year
+```
+
+See [FILTERING_GUIDE.md](FILTERING_GUIDE.md) for complete documentation.
 
 ## Views Configuration
 

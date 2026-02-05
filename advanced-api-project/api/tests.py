@@ -9,6 +9,7 @@ from datetime import datetime
 Test Suite for API Application
 
 This module contains tests for models, serializers, and views.
+Updated with tests for filtering, searching, and ordering functionality.
 Run tests with: python manage.py test
 """
 
@@ -76,11 +77,28 @@ class BookAPITest(APITestCase):
         )
         
         # Create test data
-        self.author = Author.objects.create(name="Test Author")
-        self.book = Book.objects.create(
-            title="Test Book",
-            publication_year=2020,
-            author=self.author
+        self.author1 = Author.objects.create(name="J.R.R. Tolkien")
+        self.author2 = Author.objects.create(name="George Orwell")
+        
+        self.book1 = Book.objects.create(
+            title="The Hobbit",
+            publication_year=1937,
+            author=self.author1
+        )
+        self.book2 = Book.objects.create(
+            title="The Lord of the Rings",
+            publication_year=1954,
+            author=self.author1
+        )
+        self.book3 = Book.objects.create(
+            title="1984",
+            publication_year=1949,
+            author=self.author2
+        )
+        self.book4 = Book.objects.create(
+            title="Animal Farm",
+            publication_year=1945,
+            author=self.author2
         )
         
         # Set up API client
@@ -90,12 +108,13 @@ class BookAPITest(APITestCase):
         """Test that unauthenticated users can view book list"""
         response = self.client.get('/api/books/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)
     
     def test_get_book_detail_unauthenticated(self):
         """Test that unauthenticated users can view book details"""
-        response = self.client.get(f'/api/books/{self.book.id}/')
+        response = self.client.get(f'/api/books/{self.book1.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['title'], 'Test Book')
+        self.assertEqual(response.data['title'], 'The Hobbit')
     
     def test_create_book_authenticated(self):
         """Test that authenticated users can create books"""
@@ -104,19 +123,19 @@ class BookAPITest(APITestCase):
         data = {
             'title': 'New Book',
             'publication_year': 2021,
-            'author': self.author.id
+            'author': self.author1.id
         }
         
         response = self.client.post('/api/books/create/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Book.objects.count(), 2)
+        self.assertEqual(Book.objects.count(), 5)
     
     def test_create_book_unauthenticated(self):
         """Test that unauthenticated users cannot create books"""
         data = {
             'title': 'New Book',
             'publication_year': 2021,
-            'author': self.author.id
+            'author': self.author1.id
         }
         
         response = self.client.post('/api/books/create/', data)
@@ -130,7 +149,7 @@ class BookAPITest(APITestCase):
         data = {
             'title': 'Future Book',
             'publication_year': future_year,
-            'author': self.author.id
+            'author': self.author1.id
         }
         
         response = self.client.post('/api/books/create/', data)
@@ -143,15 +162,15 @@ class BookAPITest(APITestCase):
         
         data = {
             'title': 'Updated Book',
-            'publication_year': 2020,
-            'author': self.author.id
+            'publication_year': 1937,
+            'author': self.author1.id
         }
         
-        response = self.client.put(f'/api/books/{self.book.id}/update/', data)
+        response = self.client.put(f'/api/books/{self.book1.id}/update/', data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        self.book.refresh_from_db()
-        self.assertEqual(self.book.title, 'Updated Book')
+        self.book1.refresh_from_db()
+        self.assertEqual(self.book1.title, 'Updated Book')
     
     def test_partial_update_book(self):
         """Test partial update (PATCH) of a book"""
@@ -159,23 +178,251 @@ class BookAPITest(APITestCase):
         
         data = {'title': 'Partially Updated Book'}
         
-        response = self.client.patch(f'/api/books/{self.book.id}/update/', data)
+        response = self.client.patch(f'/api/books/{self.book1.id}/update/', data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        self.book.refresh_from_db()
-        self.assertEqual(self.book.title, 'Partially Updated Book')
-        self.assertEqual(self.book.publication_year, 2020)  # Unchanged
+        self.book1.refresh_from_db()
+        self.assertEqual(self.book1.title, 'Partially Updated Book')
+        self.assertEqual(self.book1.publication_year, 1937)  # Unchanged
     
     def test_delete_book_authenticated(self):
         """Test that authenticated users can delete books"""
         self.client.force_authenticate(user=self.user)
         
-        response = self.client.delete(f'/api/books/{self.book.id}/delete/')
+        response = self.client.delete(f'/api/books/{self.book1.id}/delete/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Book.objects.count(), 0)
+        self.assertEqual(Book.objects.count(), 3)
     
     def test_delete_book_unauthenticated(self):
         """Test that unauthenticated users cannot delete books"""
-        response = self.client.delete(f'/api/books/{self.book.id}/delete/')
+        response = self.client.delete(f'/api/books/{self.book1.id}/delete/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(Book.objects.count(), 1)  # Book still exists
+        self.assertEqual(Book.objects.count(), 4)  # Book still exists
+
+
+class FilteringTests(APITestCase):
+    """Tests for filtering functionality"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.author1 = Author.objects.create(name="J.R.R. Tolkien")
+        self.author2 = Author.objects.create(name="George Orwell")
+        
+        Book.objects.create(title="The Hobbit", publication_year=1937, author=self.author1)
+        Book.objects.create(title="The Lord of the Rings", publication_year=1954, author=self.author1)
+        Book.objects.create(title="1984", publication_year=1949, author=self.author2)
+        Book.objects.create(title="Animal Farm", publication_year=1945, author=self.author2)
+        
+        self.client = APIClient()
+    
+    def test_filter_by_publication_year(self):
+        """Test filtering by exact publication year"""
+        response = self.client.get('/api/books/?publication_year=1949')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['title'], '1984')
+    
+    def test_filter_by_author(self):
+        """Test filtering by author ID"""
+        response = self.client.get(f'/api/books/?author={self.author1.id}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        titles = [book['title'] for book in response.data]
+        self.assertIn('The Hobbit', titles)
+        self.assertIn('The Lord of the Rings', titles)
+    
+    def test_filter_by_year_gte(self):
+        """Test filtering by publication_year greater than or equal"""
+        response = self.client.get('/api/books/?publication_year__gte=1950')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['title'], 'The Lord of the Rings')
+    
+    def test_filter_by_year_lte(self):
+        """Test filtering by publication_year less than or equal"""
+        response = self.client.get('/api/books/?publication_year__lte=1945')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        titles = [book['title'] for book in response.data]
+        self.assertIn('The Hobbit', titles)
+        self.assertIn('Animal Farm', titles)
+    
+    def test_filter_by_year_range(self):
+        """Test filtering by year range using gte and lte"""
+        response = self.client.get('/api/books/?publication_year__gte=1945&publication_year__lte=1950')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        titles = [book['title'] for book in response.data]
+        self.assertIn('1984', titles)
+        self.assertIn('Animal Farm', titles)
+    
+    def test_filter_multiple_fields(self):
+        """Test filtering by multiple fields simultaneously"""
+        response = self.client.get(f'/api/books/?author={self.author1.id}&publication_year__gte=1950')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['title'], 'The Lord of the Rings')
+
+
+class SearchTests(APITestCase):
+    """Tests for search functionality"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.author1 = Author.objects.create(name="J.R.R. Tolkien")
+        self.author2 = Author.objects.create(name="George Orwell")
+        
+        Book.objects.create(title="The Hobbit", publication_year=1937, author=self.author1)
+        Book.objects.create(title="The Lord of the Rings", publication_year=1954, author=self.author1)
+        Book.objects.create(title="1984", publication_year=1949, author=self.author2)
+        Book.objects.create(title="Animal Farm", publication_year=1945, author=self.author2)
+        
+        self.client = APIClient()
+    
+    def test_search_by_title(self):
+        """Test searching by book title"""
+        response = self.client.get('/api/books/?search=hobbit')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['title'], 'The Hobbit')
+    
+    def test_search_by_author_name(self):
+        """Test searching by author name"""
+        response = self.client.get('/api/books/?search=tolkien')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        titles = [book['title'] for book in response.data]
+        self.assertIn('The Hobbit', titles)
+        self.assertIn('The Lord of the Rings', titles)
+    
+    def test_search_case_insensitive(self):
+        """Test that search is case-insensitive"""
+        response1 = self.client.get('/api/books/?search=TOLKIEN')
+        response2 = self.client.get('/api/books/?search=tolkien')
+        response3 = self.client.get('/api/books/?search=Tolkien')
+        
+        self.assertEqual(len(response1.data), 2)
+        self.assertEqual(len(response2.data), 2)
+        self.assertEqual(len(response3.data), 2)
+    
+    def test_search_partial_match(self):
+        """Test that search finds partial matches"""
+        response = self.client.get('/api/books/?search=lord')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['title'], 'The Lord of the Rings')
+    
+    def test_search_no_results(self):
+        """Test search with no matching results"""
+        response = self.client.get('/api/books/?search=nonexistent')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+
+
+class OrderingTests(APITestCase):
+    """Tests for ordering functionality"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.author1 = Author.objects.create(name="J.R.R. Tolkien")
+        self.author2 = Author.objects.create(name="George Orwell")
+        
+        Book.objects.create(title="The Hobbit", publication_year=1937, author=self.author1)
+        Book.objects.create(title="The Lord of the Rings", publication_year=1954, author=self.author1)
+        Book.objects.create(title="1984", publication_year=1949, author=self.author2)
+        Book.objects.create(title="Animal Farm", publication_year=1945, author=self.author2)
+        
+        self.client = APIClient()
+    
+    def test_order_by_title_ascending(self):
+        """Test ordering by title (A-Z)"""
+        response = self.client.get('/api/books/?ordering=title')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        titles = [book['title'] for book in response.data]
+        self.assertEqual(titles, ['1984', 'Animal Farm', 'The Hobbit', 'The Lord of the Rings'])
+    
+    def test_order_by_title_descending(self):
+        """Test ordering by title (Z-A)"""
+        response = self.client.get('/api/books/?ordering=-title')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        titles = [book['title'] for book in response.data]
+        self.assertEqual(titles, ['The Lord of the Rings', 'The Hobbit', 'Animal Farm', '1984'])
+    
+    def test_order_by_year_ascending(self):
+        """Test ordering by publication year (oldest first)"""
+        response = self.client.get('/api/books/?ordering=publication_year')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        years = [book['publication_year'] for book in response.data]
+        self.assertEqual(years, [1937, 1945, 1949, 1954])
+    
+    def test_order_by_year_descending(self):
+        """Test ordering by publication year (newest first)"""
+        response = self.client.get('/api/books/?ordering=-publication_year')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        years = [book['publication_year'] for book in response.data]
+        self.assertEqual(years, [1954, 1949, 1945, 1937])
+    
+    def test_default_ordering(self):
+        """Test that default ordering is by -publication_year"""
+        response = self.client.get('/api/books/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        years = [book['publication_year'] for book in response.data]
+        self.assertEqual(years, [1954, 1949, 1945, 1937])
+    
+    def test_order_by_author(self):
+        """Test ordering by author ID"""
+        response = self.client.get('/api/books/?ordering=author')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Results should be grouped by author
+        self.assertEqual(len(response.data), 4)
+
+
+class CombinedFeaturesTests(APITestCase):
+    """Tests for combining filtering, searching, and ordering"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.author1 = Author.objects.create(name="J.R.R. Tolkien")
+        self.author2 = Author.objects.create(name="George Orwell")
+        
+        Book.objects.create(title="The Hobbit", publication_year=1937, author=self.author1)
+        Book.objects.create(title="The Lord of the Rings", publication_year=1954, author=self.author1)
+        Book.objects.create(title="1984", publication_year=1949, author=self.author2)
+        Book.objects.create(title="Animal Farm", publication_year=1945, author=self.author2)
+        
+        self.client = APIClient()
+    
+    def test_filter_and_order(self):
+        """Test combining filtering and ordering"""
+        response = self.client.get(f'/api/books/?author={self.author1.id}&ordering=publication_year')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        years = [book['publication_year'] for book in response.data]
+        self.assertEqual(years, [1937, 1954])  # Oldest first
+    
+    def test_search_and_order(self):
+        """Test combining search and ordering"""
+        response = self.client.get('/api/books/?search=the&ordering=title')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        titles = [book['title'] for book in response.data]
+        self.assertEqual(titles, ['The Hobbit', 'The Lord of the Rings'])
+    
+    def test_filter_search_and_order(self):
+        """Test combining all three features"""
+        response = self.client.get(
+            f'/api/books/?author={self.author1.id}&search=lord&ordering=-publication_year'
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['title'], 'The Lord of the Rings')
+    
+    def test_filter_by_range_and_order(self):
+        """Test filtering by year range and ordering"""
+        response = self.client.get(
+            '/api/books/?publication_year__gte=1940&publication_year__lte=1955&ordering=publication_year'
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        years = [book['publication_year'] for book in response.data]
+        self.assertEqual(years, [1945, 1949])
