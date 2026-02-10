@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Profile, Comment, Post, Tag
+from .models import Profile, Comment, Post
+from taggit.forms import TagWidget
 
 # 1. Registration Form
 class CustomUserCreationForm(UserCreationForm):
@@ -40,5 +41,5 @@ class PostForm(forms.ModelForm):
         model = Post
         fields = ['title', 'content', 'tags']
         widgets = {
-            'tags': forms.CheckboxSelectMultiple(),
+            'tags': TagWidget(),
         }
