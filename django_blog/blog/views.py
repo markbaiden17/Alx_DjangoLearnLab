@@ -135,5 +135,4 @@ class PostByTagView(ListView):
     context_object_name = 'posts'
 
     def get_queryset(self):
-        tag_name = self.kwargs.get('tag_name')
-        return Post.objects.filter(tags__name__iexact=tag_name)
+        return Post.objects.filter(tags__name__in=[self.kwargs.get('tag_name')])
