@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Profile, Comment
+from .models import Profile, Comment, Post, Tag
 
 # 1. Registration Form
 class CustomUserCreationForm(UserCreationForm):
@@ -32,4 +32,13 @@ class CommentForm(forms.ModelForm):
         fields = ['content']
         widgets = {
             'content': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Add a comment...'}),
+        }
+
+# 5. Post Form
+class PostForm(forms.ModelForm):
+    class Meta:
+        model = Post
+        fields = ['title', 'content', 'tags']
+        widgets = {
+            'tags': forms.CheckboxSelectMultiple(),
         }

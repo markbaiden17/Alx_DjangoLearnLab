@@ -13,6 +13,12 @@
             <div class="nav-brand">
                 <a href="/">My Django Blog</a>
             </div>
+            <div>
+                <form action="{% url 'search-results' %}" method="get">
+                <input name="q" type="text" placeholder="Search posts or tags...">
+                <button type="submit">Search</button>
+                </form>
+            </div>
             <div class="nav-links">
                 {% if user.is_authenticated %}
                     <a href="{% url 'profile' %}">Profile</a>
