@@ -5,7 +5,8 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.db.models import Q
 from django.urls import reverse_lazy
 from .forms import (CustomUserCreationForm, UserUpdateForm, ProfileUpdateForm, CommentForm)
-from .models import Post, Comment, Profile, Post, Tag
+from .models import Post, Comment, Profile, Post
+from taggit.models import Tag
 
 # --- 1. BLOG POST VIEWS (CRUD) ---
 
@@ -129,10 +130,11 @@ class PostSearchView(ListView):
             Q(tags__name__icontains=query)
         ).distinct()
 
-class PostByTagView(ListView):
+class PostByTagListView(ListView):
     model = Post
     template_name = 'blog/post_list.html'
     context_object_name = 'posts'
 
     def get_queryset(self):
-        return Post.objects.filter(tags__name__in=[self.kwargs.get('tag_name')])
+        tag_slug = self.kwargs.get('tag_slug')
+        return Post.objects.filter(tags__slug__iexact=tag_slug)
