@@ -82,3 +82,23 @@ The response will contain your `token`. Use this token for any future requests t
 * **accounts/**: Handles user logic, authentication, and profiles.
 * **social_media_api/**: Project configuration and main routing.
 * **manage.py**: Django's command-line utility.
+
+## 📝 Post & Comment Endpoints
+
+The API now supports full CRUD for Posts and Comments. 
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/api/posts/` | **GET** | List all posts (Supports `?search=term`). |
+| `/api/posts/` | **POST** | Create a new post (Auth required). |
+| `/api/posts/<id>/` | **PUT/DELETE** | Update or Delete a post (Author only). |
+| `/api/comments/` | **POST** | Add a comment to a specific post. |
+
+### 🔍 Filtering & Search
+To search for posts by title or content:
+`GET /api/posts/?search=django`
+
+### 🛂 Permissions
+- **Public:** Can view posts and comments.
+- **Authenticated Users:** Can create posts and comments.
+- **Authors:** Can edit or delete their own content.
