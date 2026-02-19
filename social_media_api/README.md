@@ -64,6 +64,9 @@ Manage content and engage with other users through the following endpoints:
 | /api/posts/<id>/ | PUT/DELETE | Update or Delete a post (Author only). |
 | /api/posts/feed/ | GET | View posts from users you follow, newest first. |
 | /api/comments/ | POST | Add a comment to a specific post. |
+| /api/posts/<int:pk>/like/ | POST | Like a post and notify the author. |
+| /api/posts/<int:pk>/unlike/ | POST | Remove a like from a post. |
+| /api/notifications/ | GET | List all notifications for the current user. |
 
 ### 🔍 Filtering & Search
 To search for posts by title or content:
