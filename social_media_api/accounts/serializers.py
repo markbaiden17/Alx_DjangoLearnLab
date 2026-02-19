@@ -8,7 +8,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email', 'bio', 'profile_picture']
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField()
 
     class Meta:
         model = get_user_model()
@@ -19,8 +19,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = get_user_model().objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email'),
-            password=validated_data['password'],
-            bio=validated_data.get('bio', '')
+            password=validated_data['password']
         )
+        
+        # Manually handle bio if it's in the validated_data
+        if 'bio' in validated_data:
+            user.bio = validated_data['bio']
+            user.save()
+            
         Token.objects.create(user=user)
         return user
