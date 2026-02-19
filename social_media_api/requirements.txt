@@ -1,2 +1,6 @@
-pip install gunicorn dj-database-url psycopg2-binary
-pip freeze > requirements.txt
+django
+djangorestframework
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary
